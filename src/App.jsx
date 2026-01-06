@@ -446,7 +446,7 @@ export default function App() {
             </p>
           )}
 
-          <p className="footer">© 2025 Radiance Joshua Technologies</p>
+          <p className="footer">© 2026 Radiance Joshua Technologies</p>
         </div>
       </div>
     </div>
