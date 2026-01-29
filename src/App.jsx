@@ -123,11 +123,11 @@ export default function App() {
     const result = totalUnits === 0 ? 0 : Number((totalPoints / totalUnits).toFixed(2));
     const resultStr = result.toFixed(2);
 
-    // FIX: Set final result IMMEDIATELY so button is clickable
+    // --- FIX: Logic changed so button never disappears ---
     setCgpa(resultStr); 
+    setDisplayCgpa(resultStr); // Initialize immediately so it's never null
     
     setAnimating(true);
-    setDisplayCgpa(null);
     if (intervalRef.current) clearInterval(intervalRef.current);
 
     const start = Date.now();
@@ -144,27 +144,23 @@ export default function App() {
     }, 35);
   };
 
-  // --- PDF GENERATION (TEXT HEADER ONLY) ---
+  // --- PDF GENERATION ---
   const downloadPDF = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
 
-    // 1. Force White Background
     doc.setFillColor(255, 255, 255);
     doc.rect(0, 0, pageWidth, pageHeight, "F");
 
-    // 2. Add Title Header
     doc.setFontSize(22);
-    doc.setTextColor(59, 130, 246); // Brand Blue
+    doc.setTextColor(59, 130, 246); 
     doc.text("CGPA Result", pageWidth / 2, 20, { align: "center" });
 
-    // 3. Add Date Sub-header
     doc.setFontSize(10);
-    doc.setTextColor(100); // Grey
+    doc.setTextColor(100); 
     doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, 28, { align: "center" });
 
-    // 4. Create Table
     const tableColumn = ["Course Code", "Score", "Grade", "Units"];
     const tableRows = [];
 
@@ -186,7 +182,6 @@ export default function App() {
       styles: { halign: 'center' },
     });
 
-    // 5. Add Final Score
     const finalY = doc.lastAutoTable.finalY + 20;
     
     doc.setFontSize(16);
@@ -199,7 +194,6 @@ export default function App() {
     doc.setTextColor(100); 
     doc.text(`(Scale: ${scale}.0)`, pageWidth / 2, finalY + 7, { align: "center" });
 
-    // 6. Add Copyright Footer
     const footerY = pageHeight - 15;
     doc.setFontSize(10);
     doc.setTextColor(150);
@@ -309,25 +303,23 @@ export default function App() {
           <button className="btn add-btn" onClick={addCourse}>+ Add Another Course</button>
           <button className="btn calc-btn" onClick={calculateCGPA} disabled={hasError || animating}>{animating ? "Calculating..." : "Calculate CGPA"}</button>
 
-          {/* Result Section */}
-          {displayCgpa !== null && (
+          {/* CHECKING IF CGPA IS NOT NULL ensures button stays visible */}
+          {cgpa !== null && (
             <>
               <div className="result-container">
                 <div className="result-label">Your Cumulative GPA</div>
-                <div className="result-value">{displayCgpa}</div>
+                {/* Fallback to cgpa if displayCgpa flickers */}
+                <div className="result-value">{displayCgpa || cgpa}</div>
               </div>
               
-              {/* Button appears immediately if cgpa exists */}
-              {cgpa && (
-                <button 
-                  className="btn dl-btn" 
-                  onClick={downloadPDF}
-                  disabled={animating}
-                  style={{ opacity: animating ? 0.6 : 1, cursor: animating ? 'not-allowed' : 'pointer' }}
-                >
-                  {animating ? "Loading PDF..." : "⬇ Download Result (PDF)"}
-                </button>
-              )}
+              <button 
+                className="btn dl-btn" 
+                onClick={downloadPDF}
+                disabled={animating}
+                style={{ opacity: animating ? 0.6 : 1, cursor: animating ? 'not-allowed' : 'pointer' }}
+              >
+                {animating ? "Loading PDF..." : "⬇ Download Result (PDF)"}
+              </button>
             </>
           )}
 
