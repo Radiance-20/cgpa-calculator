@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import logo from "./logo.png"; 
+import logo from "./logo.png"; // ⚠️ Ensure logo.png is in your src folder!
 
 export default function App() {
   const [courses, setCourses] = useState([
@@ -32,6 +32,7 @@ export default function App() {
   }, [darkMode]);
 
   useEffect(() => {
+    // Reset results if scale changes
     setCgpa(null);
     setDisplayCgpa(null);
   }, [scale]);
@@ -123,6 +124,9 @@ export default function App() {
     const result = totalUnits === 0 ? 0 : Number((totalPoints / totalUnits).toFixed(2));
     const resultStr = result.toFixed(2);
 
+    // 1. Set Result Immediately (So Button Shows)
+    setCgpa(resultStr); 
+    
     setAnimating(true);
     setDisplayCgpa(null);
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -130,29 +134,28 @@ export default function App() {
     const start = Date.now();
     intervalRef.current = setInterval(() => {
       const elapsed = Date.now() - start;
-      if (elapsed >= 500) {
+      if (elapsed >= 250) { 
         clearInterval(intervalRef.current);
-        setCgpa(resultStr);
         setDisplayCgpa(resultStr);
         setAnimating(false);
       } else {
         const rand = (Math.random() * scale).toFixed(2);
         setDisplayCgpa(rand);
       }
-    }, 50);
+    }, 35);
   };
 
-  // --- PDF GENERATION FUNCTION ---
+  // --- PDF GENERATION WITH CENTERED LOGO ---
   const downloadPDF = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
 
-    // 1. FORCE WHITE BACKGROUND (Crucial for Blue Logo)
+    // 1. Force White Background
     doc.setFillColor(255, 255, 255);
     doc.rect(0, 0, pageWidth, pageHeight, "F");
 
-    // 2. ADD CENTRALIZED LOGO
+    // 2. Add Centered Logo
     const imgElement = document.getElementById("brand-logo");
     let nextY = 20;
 
@@ -161,17 +164,17 @@ export default function App() {
         const imgRawHeight = imgElement.naturalHeight;
         const ratio = imgRawWidth / imgRawHeight;
         
-        const pdfLogoWidth = 40; // Size of logo in PDF (mm)
+        const pdfLogoWidth = 40; 
         const pdfLogoHeight = pdfLogoWidth / ratio;
         
-        // This math perfectly centers it
+        // This math calculates the exact center
         const xPos = (pageWidth / 2) - (pdfLogoWidth / 2);
         
         doc.addImage(imgElement, 'PNG', xPos, 15, pdfLogoWidth, pdfLogoHeight);
-        nextY = 15 + pdfLogoHeight + 10;
+        nextY = 15 + pdfLogoHeight + 10; 
     }
 
-    // 3. TABLE
+    // 3. Table
     const tableColumn = ["Course Code", "Score", "Grade", "Units"];
     const tableRows = [];
 
@@ -187,26 +190,26 @@ export default function App() {
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: nextY,
+      startY: nextY, 
       theme: 'striped',
-      headStyles: { fillColor: [59, 130, 246] }, // Matches your blue theme
+      headStyles: { fillColor: [59, 130, 246] }, 
       styles: { halign: 'center' },
     });
 
-    // 4. CGPA SUMMARY
+    // 4. Final Score
     const finalY = doc.lastAutoTable.finalY + 20;
     
     doc.setFontSize(16);
-    doc.setTextColor(0); // Black text
+    doc.setTextColor(0); 
     doc.setFont("helvetica", "bold");
     doc.text(`Final CGPA: ${cgpa}`, pageWidth / 2, finalY, { align: "center" });
     
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(100); // Grey text
+    doc.setTextColor(100); 
     doc.text(`(Scale: ${scale}.0)`, pageWidth / 2, finalY + 7, { align: "center" });
 
-    // 5. COPYRIGHT FOOTER
+    // 5. Copyright Footer
     const footerY = pageHeight - 15;
     doc.setFontSize(10);
     doc.setTextColor(150);
@@ -224,62 +227,43 @@ export default function App() {
   return (
     <div>
       <style>{`
-        .app-container {
-          --page-bg: #f8fafc; --header-bg: #ffffff; --card-bg: #ffffff;
-          --text: #0f172a; --muted: #64748b; --input-bg: #f1f5f9;
-          --border: #e2e8f0; --primary: #3b82f6; --danger: #ef4444;
-          --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-          transition: background-color 500ms ease, color 500ms ease;
-        }
-        .app-container.dark {
-          --page-bg: #0f172a; --header-bg: #1e293b; --card-bg: #1e293b;
-          --text: #f1f5f9; --muted: #94a3b8; --input-bg: #334155;
-          --border: #334155; --primary: #60a5fa; --danger: #f87171;
-          --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
-        }
-        body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--page-bg); }
-        .app-container { min-height: 100vh; display: flex; flex-direction: column; align-items: center; background-color: var(--page-bg); }
-        
-        .page-header { width: 100%; background-color: var(--header-bg); border-bottom: 1px solid var(--border); padding: 12px 0; position: sticky; top: 0; z-index: 100; transition: background-color 500ms ease; }
+        .app-container { --page-bg: #f8fafc; --header-bg: #ffffff; --card-bg: #ffffff; --text: #0f172a; --muted: #64748b; --input-bg: #f1f5f9; --border: #e2e8f0; --primary: #3b82f6; --danger: #ef4444; --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); transition: background 500ms; }
+        .app-container.dark { --page-bg: #0f172a; --header-bg: #1e293b; --card-bg: #1e293b; --text: #f1f5f9; --muted: #94a3b8; --input-bg: #334155; --border: #334155; --primary: #60a5fa; --danger: #f87171; --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--page-bg); }
+        .app-container { min-height: 100vh; display: flex; flex-direction: column; align-items: center; background: var(--page-bg); }
+        .page-header { width: 100%; background: var(--header-bg); border-bottom: 1px solid var(--border); padding: 12px 0; position: sticky; top: 0; z-index: 100; transition: background 500ms; }
         .header-content { max-width: 600px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
-        
         .brand-section { display: flex; align-items: center; gap: 12px; }
         .app-logo { height: 32px; width: auto; border-radius: 6px; }
-        h1 { font-size: 18px; font-weight: 700; margin: 0; color: var(--text); letter-spacing: -0.5px; }
-
+        h1 { font-size: 18px; font-weight: 700; margin: 0; color: var(--text); }
         .main-content { width: 100%; max-width: 600px; padding: 30px 20px 60px 20px; box-sizing: border-box; }
-
-        .scale-selector { position: relative; display: flex; background-color: var(--header-bg); border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 24px; isolation: isolate; }
-        .selector-pill { position: absolute; top: 4px; left: 4px; bottom: 4px; width: calc(50% - 4px); background-color: var(--primary); border-radius: 8px; z-index: 1; transition: transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .scale-selector { position: relative; display: flex; background: var(--header-bg); border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 24px; isolation: isolate; }
+        .selector-pill { position: absolute; top: 4px; left: 4px; bottom: 4px; width: calc(50% - 4px); background: var(--primary); border-radius: 8px; z-index: 1; transition: transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1); }
         .scale-selector[data-active="4"] .selector-pill { transform: translateX(100%); }
-        .scale-btn { flex: 1; z-index: 2; border: none; background: transparent; color: var(--muted); padding: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: color 300ms ease; }
-        .scale-btn.active { color: #ffffff; }
-
-        .course-card { background-color: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: var(--shadow); transition: all 300ms ease; }
+        .scale-btn { flex: 1; z-index: 2; border: none; background: transparent; color: var(--muted); padding: 10px; font-weight: 600; cursor: pointer; transition: color 300ms; }
+        .scale-btn.active { color: #fff; }
+        .course-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: var(--shadow); transition: all 300ms; }
         .course-card.entering { transform: translateY(-15px); opacity: 0; }
         .form-group { display: flex; flex-direction: column; margin-bottom: 8px; }
         .form-group label { font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
-        .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: start; }
-        input { width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 15px; background: var(--input-bg); color: var(--text); transition: all 200ms ease; outline: none; }
+        .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        input { width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 15px; background: var(--input-bg); color: var(--text); outline: none; transition: 200ms; }
         input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
         .error { color: var(--danger); font-size: 12px; margin-top: 4px; }
         .remove-btn { border: none; background: none; color: var(--danger); font-size: 12px; font-weight: 600; margin-top: 10px; cursor: pointer; text-align: right; width: 100%; opacity: 0.7; }
         .remove-btn:hover { opacity: 1; text-decoration: underline; }
-
-        .btn { width: 100%; padding: 14px; margin-top: 12px; border: none; border-radius: 10px; color: #fff; cursor: pointer; font-weight: 600; font-size: 15px; transition: transform 0.1s; }
-        .add-btn { background-color: var(--primary); }
+        .btn { width: 100%; padding: 14px; margin-top: 12px; border: none; border-radius: 10px; color: #fff; cursor: pointer; font-weight: 600; transition: transform 0.1s; }
+        .add-btn { background: var(--primary); }
+        .calc-btn { background: #10b981; }
         .add-btn:active, .calc-btn:active, .dl-btn:active { transform: scale(0.98); }
-        .calc-btn { background-color: #10b981; }
-        .dl-btn { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); margin-top: 16px; }
-        .dl-btn:hover { background-color: var(--input-bg); }
-        .btn:disabled { background-color: var(--muted); opacity: 0.5; }
-
-        .result-container { background-color: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-top: 24px; text-align: center; box-shadow: var(--shadow); }
+        .dl-btn { background: transparent; border: 2px solid var(--primary); color: var(--primary); margin-top: 16px; }
+        .dl-btn:hover { background: var(--input-bg); }
+        .btn:disabled { background: var(--muted); opacity: 0.5; }
+        .result-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-top: 24px; text-align: center; box-shadow: var(--shadow); }
         .result-label { font-size: 14px; color: var(--muted); margin-bottom: 4px; }
         .result-value { font-size: 32px; font-weight: 800; color: var(--primary); }
         .footer { text-align: center; margin-top: 40px; font-size: 12px; color: var(--muted); opacity: 0.6; padding-bottom: 20px; }
-
-        .theme-btn { background: transparent; border: none; cursor: pointer; color: var(--text); padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+        .theme-btn { background: transparent; border: none; cursor: pointer; color: var(--text); padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
         .theme-btn:hover { background: var(--input-bg); }
         .theme-icon { width: 20px; height: 20px; stroke-width: 2; }
       `}</style>
@@ -288,11 +272,12 @@ export default function App() {
         <header className="page-header">
           <div className="header-content">
             <div className="brand-section">
+              {/* ID=BRAND-LOGO is used by the PDF Generator */}
               <img id="brand-logo" src={logo} alt="Logo" className="app-logo" />
               <h1>CGPA Calculator</h1>
             </div>
             
-            <button className="theme-btn" onClick={() => setDarkMode(!darkMode)} aria-label="Toggle Theme">
+            <button className="theme-btn" onClick={() => setDarkMode(!darkMode)}>
               {darkMode ? (
                 <svg className="theme-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
               ) : (
@@ -343,8 +328,16 @@ export default function App() {
                 <div className="result-label">Your Cumulative GPA</div>
                 <div className="result-value">{displayCgpa}</div>
               </div>
-              {!animating && cgpa && (
-                <button className="btn dl-btn" onClick={downloadPDF}>⬇ Download Result (PDF)</button>
+              
+              {cgpa && (
+                <button 
+                  className="btn dl-btn" 
+                  onClick={downloadPDF}
+                  disabled={animating}
+                  style={{ opacity: animating ? 0.6 : 1, cursor: animating ? 'not-allowed' : 'pointer' }}
+                >
+                  {animating ? "Loading PDF..." : "⬇ Download Result (PDF)"}
+                </button>
               )}
             </>
           )}
