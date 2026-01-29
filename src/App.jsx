@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import logo from "./logo.png"; // ⚠️ Ensure logo.png is in your src folder!
 
 export default function App() {
   const [courses, setCourses] = useState([
@@ -124,7 +123,7 @@ export default function App() {
     const result = totalUnits === 0 ? 0 : Number((totalPoints / totalUnits).toFixed(2));
     const resultStr = result.toFixed(2);
 
-    // 1. Set Result Immediately (So Button Shows)
+    // FIX: Set final result IMMEDIATELY so button is clickable
     setCgpa(resultStr); 
     
     setAnimating(true);
@@ -145,7 +144,7 @@ export default function App() {
     }, 35);
   };
 
-  // --- PDF GENERATION WITH CENTERED LOGO ---
+  // --- PDF GENERATION (TEXT HEADER ONLY) ---
   const downloadPDF = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -155,26 +154,17 @@ export default function App() {
     doc.setFillColor(255, 255, 255);
     doc.rect(0, 0, pageWidth, pageHeight, "F");
 
-    // 2. Add Centered Logo
-    const imgElement = document.getElementById("brand-logo");
-    let nextY = 20;
+    // 2. Add Title Header
+    doc.setFontSize(22);
+    doc.setTextColor(59, 130, 246); // Brand Blue
+    doc.text("CGPA Result", pageWidth / 2, 20, { align: "center" });
 
-    if (imgElement) {
-        const imgRawWidth = imgElement.naturalWidth;
-        const imgRawHeight = imgElement.naturalHeight;
-        const ratio = imgRawWidth / imgRawHeight;
-        
-        const pdfLogoWidth = 40; 
-        const pdfLogoHeight = pdfLogoWidth / ratio;
-        
-        // This math calculates the exact center
-        const xPos = (pageWidth / 2) - (pdfLogoWidth / 2);
-        
-        doc.addImage(imgElement, 'PNG', xPos, 15, pdfLogoWidth, pdfLogoHeight);
-        nextY = 15 + pdfLogoHeight + 10; 
-    }
+    // 3. Add Date Sub-header
+    doc.setFontSize(10);
+    doc.setTextColor(100); // Grey
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, 28, { align: "center" });
 
-    // 3. Table
+    // 4. Create Table
     const tableColumn = ["Course Code", "Score", "Grade", "Units"];
     const tableRows = [];
 
@@ -190,13 +180,13 @@ export default function App() {
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: nextY, 
+      startY: 35, 
       theme: 'striped',
       headStyles: { fillColor: [59, 130, 246] }, 
       styles: { halign: 'center' },
     });
 
-    // 4. Final Score
+    // 5. Add Final Score
     const finalY = doc.lastAutoTable.finalY + 20;
     
     doc.setFontSize(16);
@@ -209,7 +199,7 @@ export default function App() {
     doc.setTextColor(100); 
     doc.text(`(Scale: ${scale}.0)`, pageWidth / 2, finalY + 7, { align: "center" });
 
-    // 5. Copyright Footer
+    // 6. Add Copyright Footer
     const footerY = pageHeight - 15;
     doc.setFontSize(10);
     doc.setTextColor(150);
@@ -234,7 +224,6 @@ export default function App() {
         .page-header { width: 100%; background: var(--header-bg); border-bottom: 1px solid var(--border); padding: 12px 0; position: sticky; top: 0; z-index: 100; transition: background 500ms; }
         .header-content { max-width: 600px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
         .brand-section { display: flex; align-items: center; gap: 12px; }
-        .app-logo { height: 32px; width: auto; border-radius: 6px; }
         h1 { font-size: 18px; font-weight: 700; margin: 0; color: var(--text); }
         .main-content { width: 100%; max-width: 600px; padding: 30px 20px 60px 20px; box-sizing: border-box; }
         .scale-selector { position: relative; display: flex; background: var(--header-bg); border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 24px; isolation: isolate; }
@@ -272,8 +261,6 @@ export default function App() {
         <header className="page-header">
           <div className="header-content">
             <div className="brand-section">
-              {/* ID=BRAND-LOGO is used by the PDF Generator */}
-              <img id="brand-logo" src={logo} alt="Logo" className="app-logo" />
               <h1>CGPA Calculator</h1>
             </div>
             
@@ -322,6 +309,7 @@ export default function App() {
           <button className="btn add-btn" onClick={addCourse}>+ Add Another Course</button>
           <button className="btn calc-btn" onClick={calculateCGPA} disabled={hasError || animating}>{animating ? "Calculating..." : "Calculate CGPA"}</button>
 
+          {/* Result Section */}
           {displayCgpa !== null && (
             <>
               <div className="result-container">
@@ -329,6 +317,7 @@ export default function App() {
                 <div className="result-value">{displayCgpa}</div>
               </div>
               
+              {/* Button appears immediately if cgpa exists */}
               {cgpa && (
                 <button 
                   className="btn dl-btn" 
