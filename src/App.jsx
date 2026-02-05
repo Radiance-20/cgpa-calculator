@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from "react";
-// UPDATED IMPORTS (Safer for newer React versions)
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -32,6 +31,7 @@ export default function App() {
   }, [darkMode]);
 
   useEffect(() => {
+    // Reset results if scale changes
     setCgpa(null);
     setDisplayCgpa(null);
   }, [scale]);
@@ -123,8 +123,9 @@ export default function App() {
     const result = totalUnits === 0 ? 0 : Number((totalPoints / totalUnits).toFixed(2));
     const resultStr = result.toFixed(2);
 
+    // FIX: Set result IMMEDIATELY so button is clickable
     setCgpa(resultStr); 
-    setDisplayCgpa(resultStr); // Show immediately
+    setDisplayCgpa(resultStr); 
     
     setAnimating(true);
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -143,77 +144,68 @@ export default function App() {
     }, 35);
   };
 
-  // --- SAFE PDF GENERATION ---
+  // --- PDF GENERATION (NO LOGO) ---
   const downloadPDF = () => {
-    try {
-      // Initialize PDF
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
-      // Background
-      doc.setFillColor(255, 255, 255);
-      doc.rect(0, 0, pageWidth, pageHeight, "F");
+    // 1. Force White Background
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 0, pageWidth, pageHeight, "F");
 
-      // Title
-      doc.setFontSize(22);
-      doc.setTextColor(59, 130, 246);
-      doc.text("CGPA Result", pageWidth / 2, 20, { align: "center" });
+    // 2. Add Title Header (Brand Blue)
+    doc.setFontSize(22);
+    doc.setTextColor(59, 130, 246); 
+    doc.text("CGPA Result", pageWidth / 2, 20, { align: "center" });
 
-      // Date
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, 28, { align: "center" });
+    // 3. Add Date Sub-header
+    doc.setFontSize(10);
+    doc.setTextColor(100); 
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, 28, { align: "center" });
 
-      // Table Data
-      const tableColumn = ["Course Code", "Score", "Grade", "Units"];
-      const tableRows = [];
+    // 4. Create Table
+    const tableColumn = ["Course Code", "Score", "Grade", "Units"];
+    const tableRows = [];
 
-      courses.forEach(course => {
-        tableRows.push([
-          course.course || "-",
-          course.score,
-          course.grade,
-          course.units || 0
-        ]);
-      });
+    courses.forEach(course => {
+      tableRows.push([
+        course.course || "-",
+        course.score,
+        course.grade,
+        course.units || 0
+      ]);
+    });
 
-      // Generate Table
-      autoTable(doc, {
-        head: [tableColumn],
-        body: tableRows,
-        startY: 35, 
-        theme: 'striped',
-        headStyles: { fillColor: [59, 130, 246] }, 
-        styles: { halign: 'center' },
-      });
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 35, 
+      theme: 'striped',
+      headStyles: { fillColor: [59, 130, 246] }, 
+      styles: { halign: 'center' },
+    });
 
-      // Final Score
-      const finalY = (doc.lastAutoTable && doc.lastAutoTable.finalY) ? doc.lastAutoTable.finalY + 20 : 50;
-      
-      doc.setFontSize(16);
-      doc.setTextColor(0); 
-      doc.setFont("helvetica", "bold");
-      doc.text(`Final CGPA: ${cgpa}`, pageWidth / 2, finalY, { align: "center" });
-      
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(100); 
-      doc.text(`(Scale: ${scale}.0)`, pageWidth / 2, finalY + 7, { align: "center" });
+    // 5. Add Final Score
+    const finalY = doc.lastAutoTable.finalY + 20;
+    
+    doc.setFontSize(16);
+    doc.setTextColor(0); 
+    doc.setFont("helvetica", "bold");
+    doc.text(`Final CGPA: ${cgpa}`, pageWidth / 2, finalY, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100); 
+    doc.text(`(Scale: ${scale}.0)`, pageWidth / 2, finalY + 7, { align: "center" });
 
-      // Copyright
-      const footerY = pageHeight - 15;
-      doc.setFontSize(10);
-      doc.setTextColor(150);
-      doc.text(`© ${new Date().getFullYear()} Radiance Joshua Technologies`, pageWidth / 2, footerY, { align: "center" });
+    // 6. Add Copyright Footer
+    const footerY = pageHeight - 15;
+    doc.setFontSize(10);
+    doc.setTextColor(150);
+    doc.text(`© ${new Date().getFullYear()} Radiance Joshua Technologies`, pageWidth / 2, footerY, { align: "center" });
 
-      // Save
-      doc.save(`CGPA_Result.pdf`);
-
-    } catch (error) {
-      console.error(error);
-      alert("Download failed! Error: " + error.message);
-    }
+    doc.save(`CGPA_Result.pdf`);
   };
 
   useEffect(() => {
