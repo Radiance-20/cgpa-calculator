@@ -187,7 +187,7 @@ export default function App() {
     });
 
     // 5. Add Final Score
-    const finalY = doc.lastAutoTable.finalY + 20;
+    const finalY = (doc.lastAutoTable && doc.lastAutoTable.finalY) ? doc.lastAutoTable.finalY + 20 : 50;
     
     doc.setFontSize(16);
     doc.setTextColor(0); 
