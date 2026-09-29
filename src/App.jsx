@@ -52,46 +52,68 @@ export default function App() {
   const handleInputChange = (id, field, value) => {
     setCourses((prev) =>
       prev.map((course) => {
-        if (course.id !== id) return course;
-        const updated = { ...course };
+      if (course.id !== id) return course;
 
-        if (field === "score") {
-          if (value === "") {
-            updated.score = "";
-            updated.grade = "F";
-            updated.scoreError = "";
-            return updated;
-          }
-          const num = Number(value);
-          if (Number.isNaN(num)) return course;
+      const updated = { ...course };
 
-          if (num < 0) {
-            updated.score = 0;
-            updated.scoreError = "Min score is 0";
-            updated.grade = calculateGrade(0);
-          } else if (num > 100) {
-            updated.score = 100;
-            updated.scoreError = "Max score is 100";
-            updated.grade = calculateGrade(100);
-          } else {
-            updated.score = num;
-            updated.scoreError = "";
-            updated.grade = calculateGrade(num);
-          }
-        } else if (field === "units") {
-          if (value === "") {
-            updated.units = "";
-          } else {
-            const n = Number(value);
-            updated.units = Number.isNaN(n) ? course.units : n;
-          }
-        } else {
-          updated[field] = value;
+      if (field === "score") {
+        if (value === "") {
+          updated.score = "";
+          updated.grade = "F";
+          updated.scoreError = "";
+          return updated;
         }
-        return updated;
-      })
-    );
-  };
+
+        const num = Number(value);
+
+        if (Number.isNaN(num)) return course;
+
+        if (num < 0) {
+          updated.score = 0;
+          updated.scoreError = "Score cannot be negative";
+          updated.grade = calculateGrade(0);
+        } else if (num > 100) {
+          updated.score = 100;
+          updated.scoreError = "Score cannot be greater than 100";
+          updated.grade = calculateGrade(100);
+        } else {
+          updated.score = num;
+          updated.scoreError = "";
+          updated.grade = calculateGrade(num);
+        }
+      }
+
+      else if (field === "units") {
+        if (value === "") {
+          updated.units = "";
+          updated.unitsError = "";
+          return updated;
+        }
+
+        const num = Number(value);
+
+        if (Number.isNaN(num)) return course;
+
+        if (num < 0) {
+          updated.units = 0;
+          updated.unitsError = "Units cannot be negative";
+        } else if (num === 0) {
+          updated.units = 0;
+          updated.unitsError = "Units must be greater than 0";
+        } else {
+          updated.units = num;
+          updated.unitsError = "";
+        }
+      }
+
+      else {
+        updated[field] = value;
+      }
+
+      return updated;
+    })
+  );
+};
 
   const addCourse = () => {
     const id = Date.now();
